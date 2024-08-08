@@ -6,7 +6,9 @@ use crate::dataframe::Row;
 mod dataframe;
 
 fn main() {
-    let sample: Vec<CellType> = vec![1.2, 2.3, 3.4]
+    let b = ColumnType::Float == ColumnType::Text;
+    println!("Checking: {:?}", b);
+    let _sample: Vec<CellType> = vec![1.2, 2.3, 3.4]
         .iter()
         .map(|f| CellType::Float(*f))
         .collect();
@@ -14,17 +16,16 @@ fn main() {
         Row::new(vec![
             CellType::Float(10109876543.01234),
             CellType::Float(4.0),
-            CellType::Float(5.0),
+            CellType::Text(String::from("Hello")),
         ]),
         Row::new(vec![
             CellType::Float(0.0),
             CellType::Float(1.0),
-            CellType::Float(2.0),
+            CellType::Text(String::from("Goodbye")),
         ]),
-        Row::new(sample),
     ]);
 
-    let columns = vec![ColumnType::Float, ColumnType::Float, ColumnType::Float];
+    let columns = vec![ColumnType::Float, ColumnType::Float, ColumnType::Text];
     let mut df1: DataFrame = DataFrame::new(rows, columns);
     println!("{}\n\n", df1);
 

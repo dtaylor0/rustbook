@@ -16,7 +16,7 @@ pub struct Row {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ColumnType {
     Integer,
     Float,
@@ -133,9 +133,17 @@ impl DataFrame {
     }
 
     pub fn union_all(&mut self, right: &mut DataFrame) -> Result<&DataFrame, Box<dyn Error>> {
+        // Validate columns and rows.
         if self.cols == 0 || right.cols == 0 {
             return Err(Box::new(SQLError::EmptyDataFrame));
         } else if self.count != right.count {
+            return Err(Box::new(SQLError::MismatchedColumns));
+        } else if !self
+            .columns
+            .iter()
+            .zip(right.columns.iter())
+            .all(|(l, r)| *l == *r)
+        {
             return Err(Box::new(SQLError::MismatchedColumns));
         }
         self.rows.append(&mut right.rows);
