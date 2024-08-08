@@ -1,57 +1,92 @@
 use std::error::Error;
 use std::fmt;
 
+#[allow(dead_code)]
 #[derive(Debug)]
-pub struct DataFrame<T> {
-    rows: Vec<Vec<T>>,
-    row_len: usize,
-    col_len: usize,
-    columns: Option<Vec<String>>,
+pub enum CellType {
+    Integer(i32),
+    Float(f64),
+    Text(String),
+    Boolean(bool),
 }
-impl<T> fmt::Display for DataFrame<T>
-where
-    T: ToString,
-{
+
+#[derive(Debug)]
+pub struct Row {
+    pub cells: Vec<CellType>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub enum ColumnType {
+    Integer,
+    Float,
+    Text,
+    Boolean,
+}
+
+#[derive(Debug)]
+pub struct DataFrame {
+    rows: Vec<Row>,
+    count: usize,
+    cols: usize,
+    columns: Vec<ColumnType>,
+}
+
+impl ToString for ColumnType {
+    fn to_string(&self) -> String {
+        format!("{:?}", self)
+    }
+}
+
+impl ToString for CellType {
+    fn to_string(&self) -> String {
+        match self {
+            CellType::Text(s) => s.to_string(),
+            CellType::Float(f) => f.to_string(),
+            CellType::Integer(i) => i.to_string(),
+            CellType::Boolean(b) => b.to_string(),
+        }
+    }
+}
+
+impl ToString for Row {
+    fn to_string(&self) -> String {
+        self.cells
+            .iter()
+            .map(|c| {
+                let mut res = format!("{:>13}", c.to_string());
+                res.truncate(13);
+                res
+            })
+            .collect::<Vec<String>>()
+            .join("|")
+    }
+}
+
+impl fmt::Display for DataFrame {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fn format_row<T>(row: Vec<T>) -> String
+        fn format_row<T>(row: &Vec<T>) -> String
         where
             T: ToString,
         {
-            let mut row: String = row
+            let row: String = row
                 .iter()
-                .map(|r| format!("{: >13}", r.to_string()))
-                .collect();
-            row.truncate(13);
+                .map(|r| {
+                    let mut res = format!("{: >13}", r.to_string());
+                    res.truncate(13);
+                    res
+                })
+                .collect::<Vec<String>>()
+                .join("|");
             row
         }
         let body: String = self
             .rows
             .iter()
-            .map(|r| {
-                format!(
-                    "{}\n",
-                    r.iter()
-                        .map(
-                            // |v| {
-                            // let mut res = format!("{: >13}", v.to_string());
-                            // res.truncate(13);
-                            // res
-                            format_row //})
-                        )
-                        .collect::<Vec<String>>()
-                        .join("|")
-                )
-            })
+            .map(|r| format!("{}\n", r.to_string()))
             .collect();
 
-        let header = match &self.columns {
-            Some(cols) => cols
-                .iter()
-                .map(|v| format!("{: >13}", v.to_string()))
-                .collect::<Vec<String>>()
-                .join("|"),
-            None => String::from(""),
-        };
+        let header = format_row(&self.columns);
         let separator = "-".repeat(body.lines().next().unwrap_or("").len());
 
         write!(f, "{}\n{}\n{}{}", header, separator, body, separator)
@@ -75,33 +110,36 @@ impl fmt::Display for SQLError {
 
 impl Error for SQLError {}
 
-impl<T> DataFrame<T>
-where
-    T: Clone,
-{
-    pub fn new(rows: Option<Vec<Vec<T>>>, columns: Option<Vec<String>>) -> DataFrame<T> {
+impl Row {
+    pub fn new(cells: Vec<CellType>) -> Row {
+        Row { cells }
+    }
+}
+
+impl DataFrame {
+    pub fn new(rows: Option<Vec<Row>>, columns: Vec<ColumnType>) -> DataFrame {
         let rows = match rows {
             Some(rs) => rs,
             None => vec![],
         };
-        let col_len = rows.len();
-        let row_len = if col_len > 0 { rows[0].len() } else { 0 };
+        let cols = rows.len();
+        let count = if cols > 0 { rows[0].cells.len() } else { 0 };
         return DataFrame {
-            col_len,
-            row_len,
+            cols,
+            count,
             rows,
             columns,
         };
     }
 
-    pub fn union_all(&mut self, right: &mut DataFrame<T>) -> Result<&DataFrame<T>, Box<dyn Error>> {
-        if self.col_len == 0 || right.col_len == 0 {
+    pub fn union_all(&mut self, right: &mut DataFrame) -> Result<&DataFrame, Box<dyn Error>> {
+        if self.cols == 0 || right.cols == 0 {
             return Err(Box::new(SQLError::EmptyDataFrame));
-        } else if self.row_len != right.row_len {
+        } else if self.count != right.count {
             return Err(Box::new(SQLError::MismatchedColumns));
         }
         self.rows.append(&mut right.rows);
-        self.col_len = self.col_len + right.col_len;
+        self.cols = self.cols + right.cols;
         Ok(self)
     }
 }
