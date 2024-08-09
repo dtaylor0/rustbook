@@ -14,7 +14,7 @@ fn main() {
     let csv = CSVFile(String::from("./sample.csv"));
     println!("### Reading from {} and inferring types.\n", csv.0);
     let df_csv = DataFrame::from(csv);
-    println!("{}\n\n", df_csv);
+    println!("```text\n{}\n```\n\n", df_csv);
 
     println!("### Creating a dataframe with strings\n",);
     let rows = Some(vec![
@@ -46,7 +46,7 @@ fn main() {
         },
     ];
     let df3: DataFrame = DataFrame::new(rows, columns);
-    println!("{}\n\n", df3);
+    println!("```text\n{}\n```\n\n", df3);
 
     println!("### Creating new weather dataframe with three float fields\n",);
     let columns = vec![
@@ -76,7 +76,7 @@ fn main() {
         ]),
     ]);
     let mut df1: DataFrame = DataFrame::new(rows, columns);
-    println!("{}\n\n", df1);
+    println!("```text\n{}\n```\n\n", df1);
 
     println!("### Creating another weather dataframe with three float fields\n",);
     let columns = vec![
@@ -106,12 +106,12 @@ fn main() {
         ]),
     ]);
     let mut df2: DataFrame = DataFrame::new(rows, columns);
-    println!("{}\n\n", df2);
+    println!("```text\n{}\n```\n\n", df2);
 
     println!("### Performing a union on the weather dataframes\n",);
     let df_union_all = df1.union_all(&mut df2);
     match df_union_all {
-        Ok(df) => println!("{}\n\n", df),
+        Ok(df) => println!("```text\n{}\n```\n\n", df),
         Err(e) => println!("Error occurred: {e}"),
     }
 }
