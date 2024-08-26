@@ -2,7 +2,7 @@ use std::error::Error;
 use std::io::{BufRead, BufReader};
 use std::{fmt, fs};
 
-const COLUMN_WIDTH: usize = 20;
+const DISPLAY_COLUMN_WIDTH: usize = 20;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -31,6 +31,7 @@ pub enum ColumnType {
 pub struct Column {
     pub data_type: ColumnType,
     pub name: String,
+    pub index: usize,
 }
 
 #[allow(dead_code)]
@@ -61,27 +62,28 @@ impl ToString for CellType {
 
 impl ToString for Row {
     fn to_string(&self) -> String {
+        let width = DISPLAY_COLUMN_WIDTH;
         self.cells
             .iter()
             .map(|c| match c {
                 CellType::Text(s) => {
-                    if s.len() > COLUMN_WIDTH {
+                    if s.len() > DISPLAY_COLUMN_WIDTH {
                         let mut s = s.clone();
-                        s.truncate(COLUMN_WIDTH - 3);
+                        s.truncate(DISPLAY_COLUMN_WIDTH - 3);
                         s.push_str("...");
                         return s;
                     } else {
-                        format!("{:<width$}", s, width = COLUMN_WIDTH)[..COLUMN_WIDTH].to_string()
+                        format!("{:<width$}", s)[..width].to_string()
                     }
                 }
                 CellType::Float(f) => {
-                    format!("{:>width$.2}", f, width = COLUMN_WIDTH)
+                    format!("{:>width$.2}", f)
                 }
                 CellType::Integer(i) => {
-                    format!("{:>width$}", i.to_string(), width = COLUMN_WIDTH)
+                    format!("{:>width$}", i.to_string())
                 }
                 CellType::Boolean(b) => {
-                    format!("{:>width$}", b.to_string(), width = COLUMN_WIDTH)
+                    format!("{:>width$}", b.to_string())
                 }
             })
             .collect::<Vec<String>>()
@@ -125,9 +127,11 @@ impl From<CSVFile> for DataFrame {
                 CellType::Boolean(_) => ColumnType::Boolean,
             })
             .zip(header)
-            .map(|(data_type, name)| Column {
+            .enumerate()
+            .map(|(i, (data_type, name))| Column {
                 data_type,
                 name: String::from(name),
+                index: i,
             })
             .collect();
         let mut res = DataFrame::new(Some(vec![Row::new(first)]), col_types);
@@ -175,7 +179,7 @@ impl fmt::Display for DataFrame {
                 format!(
                     "{: <width$}",
                     format!("{} [{}]", c.name.to_string(), c.data_type.to_string()),
-                    width = COLUMN_WIDTH
+                    width = DISPLAY_COLUMN_WIDTH
                 )
             })
             .collect::<Vec<String>>()
@@ -210,6 +214,16 @@ impl Row {
     }
 }
 
+#[allow(dead_code)]
+#[derive(Debug)]
+pub enum Joins {
+    LeftInner,
+    RightInner,
+    LeftOuter,
+    RightOuter,
+    Full,
+}
+
 impl DataFrame {
     pub fn columns_match(&self, other: &DataFrame) -> bool {
         self.columns.len() == other.columns.len()
@@ -241,6 +255,44 @@ impl DataFrame {
         }
         self.rows.append(&mut other.rows);
         self.count += other.count;
+        Ok(self)
+    }
+
+    /// Joins with another dataframe and returns a mutated dataframe.
+    /// # Examples
+    ///
+    /// ```
+    /// use crate::dataframe::Joins
+    /// if let Ok(df_joined) = df_left.join(df_right, "ColumnName", Joins::LeftInner) { ... }
+    /// ```
+    pub fn join(
+        &mut self,
+        right: &mut DataFrame,
+        on: &str,
+        join: Joins,
+    ) -> Result<&DataFrame, Box<dyn Error>> {
+        // Find and validate columns to join on
+        let left_col = self.columns.iter().find(|&c| c.name == on);
+        let right_col = right.columns.iter().find(|&c| c.name == on);
+        let (left_col, right_col) = match (left_col, right_col) {
+            (Some(l), Some(r)) => {
+                if l.name == r.name {
+                    Ok((l, r))
+                } else {
+                    Err("Mismatched Columns")
+                }
+            }
+            _ => Err("Womp Womp"),
+        }?;
+
+        // Route join to helper functions
+        match join {
+            j => println!(
+                "Performing {:?} join on left.{} = right.{}",
+                j, left_col.name, right_col.name
+            ),
+        }
+
         Ok(self)
     }
 }

@@ -2,7 +2,7 @@
 ## Data ETL Tool in Rust
 
 
-### Reading from ./sample.csv and inferring types.
+### Reading from ./sample.csv and inferring types
 
 ```text
 Name [Text]         |ValueA [Float]      |ValueB [Float]      

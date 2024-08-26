@@ -3,6 +3,7 @@ use crate::dataframe::CellType;
 use crate::dataframe::Column;
 use crate::dataframe::ColumnType;
 use crate::dataframe::DataFrame;
+use crate::dataframe::Joins;
 use crate::dataframe::Row;
 
 mod dataframe;
@@ -12,7 +13,7 @@ fn main() {
     println!("## Data ETL Tool in Rust\n\n");
 
     let csv = CSVFile(String::from("./sample.csv"));
-    println!("### Reading from {} and inferring types.\n", csv.0);
+    println!("### Reading from {} and inferring types\n", csv.0);
     let df_csv = DataFrame::from(csv);
     println!("```text\n{}\n```\n\n", df_csv);
 
@@ -35,32 +36,39 @@ fn main() {
         Column {
             data_type: ColumnType::Text,
             name: String::from("First Name"),
+            index: 0,
         },
         Column {
             data_type: ColumnType::Float,
             name: String::from("Last Name"),
+            index: 1,
         },
         Column {
             data_type: ColumnType::Float,
             name: String::from("Email"),
+            index: 2,
         },
     ];
     let df3: DataFrame = DataFrame::new(rows, columns);
     println!("```text\n{}\n```\n\n", df3);
+    println!("{:#?}", df3.columns);
 
     println!("### Creating new weather dataframe with three float fields\n",);
     let columns = vec![
         Column {
             data_type: ColumnType::Float,
             name: String::from("Temp (F)"),
+            index: 0,
         },
         Column {
             data_type: ColumnType::Float,
             name: String::from("Temp (C)"),
+            index: 1,
         },
         Column {
             data_type: ColumnType::Float,
             name: String::from("Humidity"),
+            index: 2,
         },
     ];
     let rows = Some(vec![
@@ -83,14 +91,17 @@ fn main() {
         Column {
             data_type: ColumnType::Float,
             name: String::from("Temp (F)"),
+            index: 0,
         },
         Column {
             data_type: ColumnType::Float,
             name: String::from("Temp (C)"),
+            index: 1,
         },
         Column {
             data_type: ColumnType::Float,
             name: String::from("Humidity"),
+            index: 2,
         },
     ];
     let rows = Some(vec![
@@ -113,5 +124,12 @@ fn main() {
     match df_union_all {
         Ok(df) => println!("```text\n{}\n```\n\n", df),
         Err(e) => println!("Error occurred: {e}"),
+    }
+
+    let _ = df1.join(&mut df2, "Humidity", Joins::LeftInner);
+    let res = df1.join(&mut df2, "humidity", Joins::LeftInner);
+    match res {
+        Err(e) => println!("{}", e),
+        Ok(_) => (),
     }
 }
